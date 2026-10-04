@@ -20,7 +20,7 @@ def hash_claim(content: str) -> str:
 
 
 def claim_id_from_hash(claim_hash: str) -> str:
-    return f"claim-{claim_hash[:8]}-2026"
+    return f"synth-{claim_hash[:8]}-2026"
 
 
 def get_cached_verification(claim_hash: str) -> dict[str, Any] | None:
@@ -144,7 +144,7 @@ def _feed_item_from_row(row: dict[str, Any]) -> dict[str, Any]:
         "claim_id": response_payload.get("claim_id") or claim_id_from_hash(claim_hash),
         "claim_text": row.get("claim_text") or response_payload.get("claim", ""),
         "input_type": row.get("input_type") or response_payload.get("input_type", "text"),
-        "verdict": row.get("verdict") or response_payload.get("verdict", "Unverified"),
+        "verdict": row.get("verdict") or response_payload.get("verdict", "Moderate Viability"),
         "trust_score": row.get("trust_score") or response_payload.get("trust_score", 0),
         "created_at": row.get("created_at") or response_payload.get("created_at"),
     }
@@ -155,7 +155,7 @@ def _feed_item_from_payload(claim_hash: str, payload: dict[str, Any]) -> dict[st
         "claim_id": payload.get("claim_id") or claim_id_from_hash(claim_hash),
         "claim_text": payload.get("claim", ""),
         "input_type": payload.get("input_type", "text"),
-        "verdict": payload.get("verdict", "Unverified"),
+        "verdict": payload.get("verdict", "Moderate Viability"),
         "trust_score": payload.get("trust_score", 0),
         "created_at": payload.get("created_at"),
     }

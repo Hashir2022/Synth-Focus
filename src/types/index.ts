@@ -7,7 +7,7 @@ export interface AgentLog {
 export interface FactCheckResponse {
   claim_id: string;
   is_cached: boolean;
-  verdict: 'True' | 'False' | 'Misleading' | 'Unverified';
+  verdict: 'High Viability' | 'Moderate Viability' | 'Niche Appeal' | 'Low Viability' | string;
   trust_score: number;
   summary: {
     english: string;

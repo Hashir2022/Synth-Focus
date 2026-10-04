@@ -6,18 +6,17 @@ from query_transform import transform_query
 load_dotenv()
 
 HIGH_CREDIBILITY = [
-    "gov.pk", "pid.gov.pk", "pbs.gov.pk", "nadra.gov.pk", 
-    "sbp.org.pk", "pta.gov.pk", "ecp.gov.pk"
+    "techcrunch.com", "producthunt.com", "g2.com", "capterra.com",
+    "ycombinator.com", "bloomberg.com", "statista.com", "forbes.com",
+    "crunchbase.com", "github.com"
 ]
 MEDIUM_CREDIBILITY = [
-    "dawn.com", "geo.tv", "app.com.pk", "tribune.com.pk", 
-    "brecorder.com", "arynews.tv", "thenews.com.pk", 
-    "samaa.tv", "dunyanews.tv", "bbc.com", "reuters.com"
+    "medium.com", "dev.to", "venturebeat.com", "theverge.com", 
+    "wired.com", "businessinsider.com", "news.ycombinator.com"
 ]
 BLOCKED_DOMAINS = [
     "facebook.com", "twitter.com", "x.com", "instagram.com", 
-    "tiktok.com", "reddit.com", "quora.com", "pinterest.com",
-    "youtube.com", "wikipedia.org"
+    "tiktok.com", "quora.com", "pinterest.com"
 ]
 
 
@@ -45,46 +44,40 @@ def get_credibility(url):
 def is_blocked(url):
     return any(blocked in url for blocked in BLOCKED_DOMAINS)
 
-def search_claim(raw_claim):
+def search_claim(raw_pitch):
     tavily_key = os.getenv("TAVILY_API_KEY")
     if not tavily_key:
         raise RuntimeError("TAVILY_API_KEY is missing")
 
     tavily_client = TavilyClient(api_key=tavily_key)
-    optimized_query = transform_query(raw_claim)
+    
+    # 1. Clean query generation: use transformed topic or raw pitch excerpt directly
+    pitch_topic = transform_query(raw_pitch) if callable(transform_query) else raw_pitch[:100]
+    optimized_query = f"{pitch_topic} industry competitors market analysis"
+
     search_plan = []
     combined_results = []
 
-    official_results = _run_search(
+    # First pass: targeted query
+    benchmark_results = _run_search(
         tavily_client,
         optimized_query,
-        max_results=6,
-        include_domains=HIGH_CREDIBILITY,
+        max_results=5,
         search_depth="basic",
     )
-    combined_results.extend(official_results)
-    search_plan.append(f"Official-source pass found {len(official_results)} results")
+    combined_results.extend(benchmark_results)
+    search_plan.append(f"Market benchmark pass found {len(benchmark_results)} industry sources")
 
-    if len(deduplicate_and_format(combined_results)) < 3:
-        news_results = _run_search(
-            tavily_client,
-            optimized_query,
-            max_results=8,
-            include_domains=MEDIUM_CREDIBILITY,
-            search_depth="basic",
-        )
-        combined_results.extend(news_results)
-        search_plan.append(f"Trusted-news pass found {len(news_results)} results")
-
+    # Fallback pass if few results found
     if len(deduplicate_and_format(combined_results)) < 3:
         wide_results = _run_search(
             tavily_client,
-            optimized_query,
-            max_results=10,
+            f"{pitch_topic} startups product market fit",
+            max_results=5,
             search_depth=os.getenv("TAVILY_FALLBACK_SEARCH_DEPTH", "advanced"),
         )
         combined_results.extend(wide_results)
-        search_plan.append(f"Wide-web fallback found {len(wide_results)} results")
+        search_plan.append(f"Wide market discovery found {len(wide_results)} references")
 
     return combined_results, optimized_query, search_plan
 
@@ -113,8 +106,8 @@ def deduplicate_and_format(results):
     
     return formatted
 
-def get_verified_sources(claim_text):
-    raw_results, optimized_query, search_plan = search_claim(claim_text)
+def get_verified_sources(pitch_text):
+    raw_results, optimized_query, search_plan = search_claim(pitch_text)
     sources = deduplicate_and_format(raw_results)
     return {
         "optimized_query": optimized_query,
@@ -123,8 +116,8 @@ def get_verified_sources(claim_text):
     }
 
 if __name__ == "__main__":
-    claim = "covid19 is back"
-    result = get_verified_sources(claim)
+    pitch = "AI focus group for validating SaaS startup ideas"
+    result = get_verified_sources(pitch)
     print(f"Optimized query: {result['optimized_query']}\n")
     for s in result['sources']:
         print(s)
