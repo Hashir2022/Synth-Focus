@@ -47,7 +47,7 @@ export default function Home() {
     }, 2800);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/verify', {
+      const res = await fetch("/api/verify", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input_type: 'text', content: queryPitch }),
