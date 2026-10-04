@@ -31,7 +31,7 @@ def transcribe_audio_file(file: UploadFile) -> str:
                 if text:
                     return text
             except Exception as cloud_exc:
-                print(f"Groq Cloud Audio Transcription failed, attempting local fallback: {cloud_exc}")
+                print(f"Groq Cloud Audio Pitch Transcription failed, attempting local fallback: {cloud_exc}")
 
         # 2. Local Fallback Execution: faster_whisper
         try:
@@ -54,10 +54,10 @@ def transcribe_audio_file(file: UploadFile) -> str:
             segments, _ = _WHISPER_MODEL.transcribe(str(path), language=language)
             transcript = " ".join(segment.text.strip() for segment in segments).strip()
         except Exception as exc:
-            raise RuntimeError(f"Local audio transcription failed: {exc}") from exc
+            raise RuntimeError(f"Local audio pitch transcription failed: {exc}") from exc
 
         if not transcript:
-            raise RuntimeError("No speech text could be transcribed from the audio file.")
+            raise RuntimeError("No spoken pitch content could be transcribed from the audio file.")
         return transcript
 
     finally:
@@ -80,16 +80,16 @@ def extract_text_from_image_file(file: UploadFile) -> str:
                 suffix = path.suffix.lower().lstrip(".")
                 mime_type = f"image/{'jpeg' if suffix in ['jpg', 'jpeg'] else suffix or 'png'}"
 
-                # Using reliable 90b vision model endpoint
+                # Groq Vision endpoint for slide / pitch deck analysis
                 response = client.chat.completions.create(
-                    model="qwen/qwen3.6-27b",
+                    model=os.getenv("GROQ_VISION_MODEL", "llama-3.2-11b-vision-preview"),
                     messages=[
                         {
                             "role": "user",
                             "content": [
                                 {
                                     "type": "text",
-                                    "text": "Extract and return ONLY the readable text present in this image. Do not include introductory notes or commentary.",
+                                    "text": "Extract all readable text, product claims, features, pricing, and value propositions present in this slide or pitch image. Do not include introductory notes or meta commentary.",
                                 },
                                 {
                                     "type": "image_url",
@@ -106,8 +106,7 @@ def extract_text_from_image_file(file: UploadFile) -> str:
                 if extracted_text:
                     return extracted_text
             except Exception as cloud_exc:
-                print(f"Groq Cloud OCR error: {cloud_exc}")
-                # If on Vercel/Cloud, return a clean error instead of trying Tesseract system binary
+                print(f"Groq Cloud Pitch Deck OCR error: {cloud_exc}")
                 if os.getenv("VERCEL"):
                     raise RuntimeError(f"Cloud Image OCR processing error: {cloud_exc}")
 
@@ -126,9 +125,9 @@ def extract_text_from_image_file(file: UploadFile) -> str:
             if text:
                 return text
         except Exception as local_exc:
-            raise RuntimeError("Could not extract readable text from the image using Vision API.") from local_exc
+            raise RuntimeError("Could not extract readable text from the pitch slide using Vision API.") from local_exc
 
-        raise RuntimeError("No readable text could be extracted from the image.")
+        raise RuntimeError("No readable pitch content could be extracted from the image.")
 
     finally:
         path.unlink(missing_ok=True)

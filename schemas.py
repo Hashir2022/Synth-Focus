@@ -4,14 +4,14 @@ from pydantic import BaseModel, Field
 
 
 InputType = Literal["text", "audio", "image"]
-Verdict = Literal["True", "False", "Misleading", "Unverified"]
+Verdict = Literal["High Viability", "Moderate Viability", "Niche Appeal", "Low Viability", "Unverified"]
 Credibility = Literal["High", "Medium", "Low"]
 AgentStatus = Literal["pending", "active", "completed", "failed"]
 
 
 class VerifyRequest(BaseModel):
     input_type: InputType = "text"
-    content: str = Field(default="", description="Raw claim text or extracted media text")
+    content: str = Field(default="", description="Raw product pitch text or extracted media text")
     media_url: str | None = None
 
 

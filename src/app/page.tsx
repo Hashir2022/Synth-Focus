@@ -1,487 +1,382 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { FactCheckResponse } from '@/types';
 
+const STARTUP_PRESETS = [
+  {
+    label: '💻 DevTool SaaS',
+    text: 'A unified API gateway that automatically caches database queries and provides real-time analytics for Next.js applications, priced at $49/mo.',
+  },
+  {
+    label: '📦 B2B Supply Chain',
+    text: 'An AI-driven inventory forecasting tool for mid-sized Shopify merchants that predicts stockouts based on social media trends and seasonal data.',
+  },
+  {
+    label: '🎨 Creator Economy',
+    text: 'A micro-payment platform allowing newsletter writers to charge per-article instead of monthly subscriptions, taking a 5% transaction fee.',
+  },
+];
+
 export default function Home() {
-  const [claim, setClaim] = useState('');
-  const [inputType, setInputType] = useState<'text' | 'audio' | 'image'>('text');
-  const [file, setFile] = useState<File | null>(null);
+  const [pitch, setPitch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stepMessage, setStepMessage] = useState('');
   const [result, setResult] = useState<FactCheckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'default' | 'light' | 'dark'>('default');
+  const [activeTab, setActiveTab] = useState<'debate' | 'sources' | 'telemetry'>('debate');
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputType === 'text' && !claim) return;
-    if (inputType !== 'text' && !file) return;
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  const handleRunDebate = async (e?: React.SyntheticEvent, customPitch?: string) => {
+    if (e) e.preventDefault();
+    const queryPitch = customPitch || pitch;
+    if (!queryPitch.trim()) return;
+
     setLoading(true);
     setError(null);
+    setStepMessage('⚡ Step 1/3: Ingesting product brief and normalizing inputs...');
+
+    // Progress simulation timers for user visual feedback
+    const t1 = setTimeout(() => {
+      setStepMessage('🌐 Step 2/3: Market Intelligence Agent querying live benchmark signals...');
+    }, 1200);
+
+    const t2 = setTimeout(() => {
+      setStepMessage('💼 Step 3/3: Executing sequential debate loop between VC, Gen-Z, & Legal personas...');
+    }, 2800);
 
     try {
-      const res =
-        inputType === 'text'
-          ? await fetch('/api/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ input_type: 'text', content: claim }),
-            })
-          : await fetch('/api/verify-file', {
-              method: 'POST',
-              body: buildFilePayload(inputType, file),
-            });
+      const res = await fetch('http://127.0.0.1:8000/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input_type: 'text', content: queryPitch }),
+      });
+
       const data = await res.json();
+
       if (!res.ok) {
         setResult(null);
-        setError(getErrorMessage(data));
+        const errorMsg = typeof data.detail === 'string' 
+          ? data.detail 
+          : JSON.stringify(data.detail) || 'Backend simulation returned an error.';
+        setError(errorMsg);
         return;
       }
+
       setResult(data as FactCheckResponse);
-    } catch (err) {
-      console.error(err);
+
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+    } catch (err: any) {
+      console.error('SynthFocus Fetch Exception:', err);
       setResult(null);
-      setError('Verification backend is unavailable. Check backend logs and try again.');
+      setError(`Cannot connect to backend server. Ensure Uvicorn is running on port 8000. (${err.message})`);
     } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
       setLoading(false);
+      setStepMessage('');
     }
   };
 
-  const isDark = theme === 'dark';
-
   return (
-    <main
-      className={`min-h-screen p-4 sm:p-6 md:p-12 transition-colors duration-300 font-sans ${
-        isDark ? 'bg-slate-950 text-slate-200' : 'bg-[#f8fafc] text-slate-800'
-      }`}
-    >
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Top Navigation Bar */}
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b border-slate-300 dark:border-slate-800 gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-3.5 w-3.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
-              </span>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-600 dark:text-emerald-500">
-                Sach-Kya AI
-              </h1>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-slate-900 selection:text-white flex flex-col relative scroll-smooth">
+      
+      {/* 1. Header */}
+      <header className="fixed top-0 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 bg-slate-900 text-white flex items-center justify-center rounded-lg font-black text-lg shadow-sm">
+              S
             </div>
-            <div className="inline-block mt-2 px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-emerald-400">
-              ⚡ Autonomous Multi-Agent Fact Verification Platform
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-black tracking-tighter text-slate-900">
+                SynthFocus
+              </span>
+              <span className="hidden sm:inline-block text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                v2.0
+              </span>
+            </div>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-slate-500">
+            <a href="#how-it-works" className="hover:text-slate-900 transition-colors">The Process</a>
+            <a href="#simulator" className="hover:text-slate-900 transition-colors">Simulator</a>
+            <a href="#capabilities" className="hover:text-slate-900 transition-colors">Capabilities</a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-600"></span>
+              </span>
+              <span>Engine Online</span>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      {/* 2. Hero Section */}
+      <main className="flex-grow pt-28 pb-20 px-6 relative">
+        <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
+        
+        <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 leading-[1.1]">
+            Validate Your Startup <br />
+            <span className="text-slate-400">Before You Build It.</span>
+          </h1>
+          <p className="text-lg text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
+            SynthFocus replaces traditional focus groups with an autonomous matrix of AI personas. We stress-test your business model, UX friction, and compliance risks in seconds.
+          </p>
+        </div>
+
+        {/* 3. The Process Cards */}
+        <div id="how-it-works" className="max-w-6xl mx-auto mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:border-slate-400 hover:shadow-md transition duration-300">
+            <div className="h-10 w-10 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-lg mb-5 shadow-sm">💼</div>
+            <h3 className="text-lg font-black mb-2 text-slate-900">VC & Economics</h3>
+            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+              Our investor persona ruthlessly evaluates your Total Addressable Market (TAM), Customer Acquisition Cost (CAC), and overall monetization strategy.
+            </p>
+          </div>
+          
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:border-slate-400 hover:shadow-md transition duration-300">
+            <div className="h-10 w-10 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-lg mb-5 shadow-sm">⚡</div>
+            <h3 className="text-lg font-black mb-2 text-slate-900">Gen-Z & UX</h3>
+            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+              The consumer persona tests your product's viral loops, onboarding friction, and brand messaging to ensure user resonance.
+            </p>
+          </div>
+          
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:border-slate-400 hover:shadow-md transition duration-300">
+            <div className="h-10 w-10 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-lg mb-5 shadow-sm">⚖️</div>
+            <h3 className="text-lg font-black mb-2 text-slate-900">Legal & Compliance</h3>
+            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+              Avoid structural pitfalls early. The compliance agent scans your concept for regulatory traps, data privacy concerns, and operational liabilities.
             </p>
           </div>
         </div>
 
-          <div className="relative inline-block text-left w-full sm:w-auto">
-            <select
-              value={theme}
-              onChange={(e) =>
-                setTheme(e.target.value as 'default' | 'light' | 'dark')
-              }
-              className={`w-full sm:w-auto appearance-none font-extrabold text-xs sm:text-sm py-2.5 pl-4 pr-10 rounded-xl border shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
-                isDark
-                  ? 'bg-slate-900 border-slate-700 text-slate-100'
-                  : 'bg-white border-slate-300 text-slate-900'
-              }`}
-            >
-              <option value="default">Default Light</option>
-              <option value="light">Light Mode</option>
-              <option value="dark">Dark Mode</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-600 dark:text-slate-400">
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-              </svg>
+        {/* 4. Glassmorphic Simulator Box */}
+        <div id="simulator" className="max-w-4xl mx-auto mt-24 relative z-10">
+          <div className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-xl rounded-[2rem] p-8 md:p-12 relative overflow-hidden">
+            
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-black tracking-tight text-slate-900">Initiate Boardroom Debate</h2>
+              <p className="text-sm text-slate-500 mt-2 font-medium">Enter your product brief or select a preset to begin the simulation.</p>
             </div>
-          </div>
-        </header>
 
-        {/* Form Controls */}
-        <form onSubmit={handleVerify} className="space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <label className={`text-xs sm:text-sm font-black uppercase tracking-wider ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-              Analyze a Claim or Viral Media
-            </label>
-
-            {/* Input Type Selector Tabs */}
-            <div className={`flex items-center gap-1.5 p-1 rounded-xl border shadow-sm ${
-              isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-200 border-slate-300'
-            }`}>
-              {(['text', 'audio', 'image'] as const).map((type) => (
+            <div className="flex flex-wrap gap-2 justify-center mb-6">
+              {STARTUP_PRESETS.map((preset, idx) => (
                 <button
-                  key={type}
+                  key={idx}
                   type="button"
-                  onClick={() => {
-                    setInputType(type);
-                    setFile(null);
-                    setError(null);
-                    setResult(null);
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPitch(preset.text);
                   }}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                    inputType === type
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : isDark
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      : 'text-slate-800 hover:text-emerald-700 hover:bg-white'
-                  }`}
+                  className="px-4 py-2 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:border-slate-900 hover:text-slate-900 transition-all shadow-sm cursor-pointer"
                 >
-                  {type}
+                  {preset.label}
                 </button>
               ))}
             </div>
-          </div>
 
-          {inputType === 'text' ? (
-            <textarea
-              value={claim}
-              onChange={(e) => setClaim(e.target.value)}
-              placeholder="Paste news headline, statement, or social media rumor to verify..."
-              className={`w-full p-4 sm:p-5 rounded-2xl border font-bold text-sm sm:text-base leading-relaxed transition focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[140px] shadow-sm ${
-                isDark
-                  ? 'bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500'
-                  : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
-              }`}
-            />
-          ) : (
-            <div
-              className={`flex flex-col sm:flex-row items-center justify-between gap-4 w-full p-6 rounded-2xl border border-dashed transition shadow-sm ${
-                isDark
-                  ? 'bg-slate-900 border-slate-800 text-slate-100'
-                  : 'bg-white border-slate-300 text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                  {inputType === 'audio' ? (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <p className={`text-sm font-black ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {file ? file.name : `Select an ${inputType} file to analyze`}
-                  </p>
-                  <p className={`text-xs font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : `Supports standard ${inputType} formats`}
-                  </p>
-                </div>
-              </div>
-
-              <input
-                id="media-upload"
-                type="file"
-                accept={inputType === 'audio' ? 'audio/*' : 'image/*'}
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="sr-only"
+            <div className="relative">
+              <textarea
+                value={pitch}
+                onChange={(e) => setPitch(e.target.value)}
+                placeholder="Detail your product, target audience, and business model..."
+                className="w-full p-6 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 font-medium text-base focus:outline-none focus:ring-2 focus:ring-slate-900 min-h-[160px] resize-none transition-shadow shadow-inner"
               />
-              <label
-                htmlFor="media-upload"
-                className="w-full sm:w-auto text-center cursor-pointer rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-xs font-black text-white uppercase tracking-wider transition shadow-md"
-              >
-                Add {inputType === 'audio' ? 'Audio' : 'Image'} File
-              </label>
             </div>
-          )}
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={loading || (inputType === 'text' ? !claim : !file)}
-              className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-600/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading && (
-                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            {/* LIVE EXECUTION FEEDBACK TERMINAL */}
+            {loading && (
+              <div className="mt-4 p-4 rounded-xl bg-slate-900 text-slate-200 text-xs font-mono flex items-center gap-3 border border-slate-800 shadow-inner animate-pulse">
+                <svg className="animate-spin h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-              )}
-              {loading ? 'Executing Agent Pipeline...' : 'Verify Claim'}
-            </button>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-sm font-extrabold">
-              <span>⚠️</span>
-              <p>{error}</p>
-            </div>
-          )}
-        </form>
-
-          {/* Dynamic Verification Dashboard */}
-        {result && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
-            {/* Left Column: Verdict & Summary Card */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              {/* Verdict Header Card */}
-              <div
-                className={`p-6 sm:p-8 rounded-3xl transition-all shadow-sm ${
-                  isDark
-                    ? 'bg-slate-900/90 ring-1 ring-slate-800 text-slate-100'
-                    : 'bg-white ring-1 ring-slate-300 text-slate-900 shadow-md'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                  <div>
-                    <h3 className={`text-sm font-extrabold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      Final Verdict
-                    </h3>
-                    <div className="flex items-center gap-4 mt-2">
-                      <div className={`h-4 w-4 rounded-full ${
-                        result.verdict.toLowerCase() === 'unverified' ? 'bg-amber-500' : 
-                        result.verdict.toLowerCase() === 'false' ? 'bg-rose-500' : 
-                        'bg-emerald-500'
-                      }`}></div>
-                      <h2
-                        className={`text-4xl sm:text-5xl font-black capitalize tracking-tight ${
-                          result.verdict.toLowerCase() === 'unverified'
-                            ? 'text-amber-600'
-                            : result.verdict.toLowerCase() === 'false'
-                            ? 'text-rose-600'
-                            : 'text-emerald-600'
-                        }`}
-                      >
-                        {result.verdict}
-                      </h2>
-                    </div>
-                  </div>
-
-                  <div className={`px-6 py-4 rounded-2xl flex flex-col items-end ${
-                    isDark ? 'bg-slate-800/80 ring-1 ring-slate-700' : 'bg-slate-100 ring-1 ring-slate-300'
-                  }`}>
-                    <span className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      Confidence Score
-                    </span>
-                    <div className={`text-3xl font-black mt-1 flex items-baseline gap-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                      {result.trust_score}
-                      <span className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>/100</span>
-                    </div>
-                  </div>
-                </div>
+                <span>{stepMessage}</span>
               </div>
+            )}
 
-              {/* Executive Summary */}
-              <div className="space-y-3">
-                <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Executive Summary
-                </h3>
-                <div className={`p-6 rounded-3xl space-y-5 transition-all ${
-                  isDark ? 'bg-slate-900/90 ring-1 ring-slate-800' : 'bg-white ring-1 ring-slate-300 shadow-md'
-                }`}>
-                  <p className={`font-bold text-base leading-relaxed ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
+            <button
+              type="button"
+              onClick={(e) => handleRunDebate(e)}
+              disabled={loading || !pitch.trim()}
+              className="w-full mt-6 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-sm uppercase tracking-widest transition-all disabled:opacity-50 shadow-md flex justify-center items-center gap-3 cursor-pointer"
+            >
+              {loading ? 'Executing Persona Loop...' : 'Run Diagnostics'}
+            </button>
+
+            {error && (
+              <div className="mt-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-3">
+                <span className="text-base shrink-0">⚠️</span>
+                <p className="leading-relaxed break-words">{error}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 5. Results Dashboard & Capabilities Section Target */}
+        <div id="capabilities" ref={resultsRef}>
+          {result && (
+            <div className="max-w-6xl mx-auto mt-16 space-y-8 animate-in slide-in-from-bottom-10 fade-in duration-700 relative z-10">
+              
+              {/* Scorecard */}
+              <div className="bg-slate-900 text-white rounded-[2rem] p-10 flex flex-col md:flex-row justify-between items-center gap-10 shadow-2xl border border-slate-800">
+                <div className="space-y-4 max-w-2xl">
+                  <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-300 border border-white/10">
+                    Simulation Complete
+                  </span>
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tight">{result.verdict}</h2>
+                  <p className="text-slate-400 font-medium leading-relaxed text-sm md:text-base">
                     {result.summary.english}
                   </p>
-                  {result.summary.urdu && (
-                    <p
-                      className={`font-bold text-lg leading-loose text-right pt-5 border-t ${
-                        isDark ? 'border-slate-800 text-slate-100' : 'border-slate-200 text-slate-900'
-                      }`}
-                      dir="rtl"
-                    >
-                      {result.summary.urdu}
-                    </p>
-                  )}
+                </div>
+                <div className="w-48 h-48 rounded-full border-[6px] border-white/10 flex flex-col items-center justify-center shrink-0 relative bg-slate-800/50">
+                  <span className="text-5xl font-black">{result.trust_score}</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Market Fit</span>
                 </div>
               </div>
 
-              {/* Extracted File Text */}
-              {result.extracted_text && (
-                <div className="space-y-3">
-                  <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-                    <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                    </svg>
-                    Extracted Media Content
-                  </h3>
-                  <div className={`p-5 rounded-2xl ${
-                    isDark ? 'bg-slate-900/60 ring-1 ring-slate-800' : 'bg-slate-100 ring-1 ring-slate-300'
-                  }`}>
-                    <p className={`font-semibold text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
-                      "{result.extracted_text}"
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Key Findings */}
-              {result.key_findings.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-                    <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Key Findings
-                  </h3>
-                  <div className="space-y-3">
-                    {result.key_findings.map((finding, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-4 p-4 rounded-2xl transition-all ${
-                          isDark ? 'bg-slate-900/90 ring-1 ring-slate-800' : 'bg-white ring-1 ring-slate-300 shadow-md'
-                        }`}
-                      >
-                        <div className="mt-1 bg-emerald-500/20 p-1 rounded-full text-emerald-600">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <span className={`text-sm font-bold leading-relaxed ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>{finding}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Verified Web Sources */}
-              <div className="space-y-3">
-                <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                  Verified Sources
-                </h3>
-                {result.sources.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
-                    {result.sources.map((src, idx) => (
-                      <a
-                        key={idx}
-                        href={src.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                          isDark
-                            ? 'bg-slate-900 ring-1 ring-slate-700 text-emerald-400'
-                            : 'bg-white ring-1 ring-slate-300 text-emerald-700 hover:shadow-md'
-                        }`}
-                      >
-                        <span className="text-emerald-500">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </span>
-                        <span>{src.title}</span>
-                        {src.credibility && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-200 text-slate-700'}`}>
-                            {src.credibility}
-                          </span>
-                        )}
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={`text-sm font-semibold italic px-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    No external sources retrieved for this search query.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column: Agent Execution Pipeline Sidebar */}
-            <div className="space-y-4">
-              <h3 className={`text-sm font-black uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
-                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                </svg>
-                Agent Telemetry
-              </h3>
-              
-              <div className={`p-5 rounded-3xl h-fit space-y-4 transition-all ${
-                isDark ? 'bg-slate-900/60 ring-1 ring-slate-800' : 'bg-slate-200/50 ring-1 ring-slate-300'
-              }`}>
-                {result.agent_logs.map((log, idx) => {
-                  const isFailed = log.status.toLowerCase() === 'failed';
-                  return (
-                    <div
-                      key={idx}
-                      className={`relative overflow-hidden p-4 rounded-2xl transition-all ${
-                        isDark ? 'bg-slate-900 ring-1 ring-slate-800' : 'bg-white ring-1 ring-slate-300 shadow-md'
-                      }`}
-                    >
-                      {/* Left color accent line */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                        isFailed ? 'bg-rose-500' : 'bg-emerald-500'
-                      }`}></div>
-                      
-                      <div className="flex justify-between items-center gap-2 pl-2 mb-2">
-                        <span className={`text-xs font-black ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                          {log.agent_name}
-                        </span>
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md ${
-                            isFailed
-                              ? 'bg-rose-100 text-rose-800'
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}
-                        >
-                          {log.status}
-                        </span>
-                      </div>
-                      <p className={`text-xs font-bold pl-2 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                        {log.message}
-                      </p>
-                    </div>
-                  );
-                })}
-
-                {result.is_cached && (
-                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
-                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <p className="text-xs">Served directly from cache.</p>
-                  </div>
-                )}
-
-                {result.warnings?.map((warning, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-3.5 rounded-2xl bg-amber-100 text-amber-900 font-bold border border-amber-300"
+              {/* Content Tabs */}
+              <div className="flex justify-center gap-3 border-b border-slate-200 pb-4">
+                {['debate', 'sources', 'telemetry'].map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+                      activeTab === tab
+                        ? 'bg-slate-900 text-white shadow-md'
+                        : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-400'
+                    }`}
                   >
-                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <p className="text-xs leading-relaxed">{warning}</p>
-                  </div>
+                    {tab === 'debate' ? 'Persona Insights' : tab === 'sources' ? 'Market Data' : 'System Logs'}
+                  </button>
                 ))}
               </div>
+
+              {/* Tab Views */}
+              <div className="min-h-[300px]">
+                {activeTab === 'debate' && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {['VC Agent', 'UX Agent', 'Legal Agent'].map((title, idx) => (
+                      <div key={idx} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 pb-4">
+                          {title}
+                        </h4>
+                        <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                          {result.key_findings[idx] || 'Processing deep analysis...'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'sources' && (
+                  <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                    {result.sources.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {result.sources.map((src, idx) => (
+                          <a key={idx} href={src.url} target="_blank" rel="noreferrer" className="block p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 transition border border-slate-200 hover:border-slate-300">
+                            <h5 className="text-sm font-bold text-slate-900 mb-2 truncate">{src.title}</h5>
+                            <p className="text-xs text-slate-500 font-medium line-clamp-2">{src.snippet}</p>
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 font-medium text-center py-10">No external market data required for this assessment.</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'telemetry' && (
+                  <div className="bg-slate-900 p-8 rounded-3xl shadow-lg text-slate-300 font-mono text-xs space-y-3 border border-slate-800">
+                    {result.agent_logs.map((log, idx) => (
+                      <div key={idx} className="flex items-center justify-between border-b border-slate-800/60 pb-3">
+                        <span className="font-medium text-slate-300">&gt; {log.agent_name}</span>
+                        <span className={`font-bold tracking-widest ${log.status === 'completed' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          [{log.status.toUpperCase()}]
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            
+          )}
+        </div>
+      </main>
+
+      {/* 6. Footer */}
+      <footer className="bg-[#0f1115] text-slate-300 pt-16 pb-8 border-t border-slate-800 mt-auto">
+        <div className="max-w-7xl mx-auto px-6 space-y-12">
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 text-sm">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 bg-white text-slate-900 flex items-center justify-center rounded font-black text-sm">S</div>
+                <h2 className="text-xl font-black text-white tracking-tight">SynthFocus</h2>
+              </div>
+              <p className="text-slate-400 text-xs leading-relaxed font-medium">
+                Autonomous multi-perspective focus group simulator.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-white font-bold tracking-widest uppercase text-[10px] mb-4">Platform</h3>
+              <ul className="space-y-3 text-slate-400 text-xs font-semibold">
+                <li className="hover:text-white cursor-pointer transition">Debate Engine</li>
+                <li className="hover:text-white cursor-pointer transition">Market Benchmarks</li>
+                <li className="hover:text-white cursor-pointer transition">API Access</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-bold tracking-widest uppercase text-[10px] mb-4">Resources</h3>
+              <ul className="space-y-3 text-slate-400 text-xs font-semibold">
+                <li className="hover:text-white cursor-pointer transition">Documentation</li>
+                <li className="hover:text-white cursor-pointer transition">Privacy Policy</li>
+                <li className="hover:text-white cursor-pointer transition">Terms of Service</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-bold tracking-widest uppercase text-[10px] mb-4">Contact</h3>
+              <p className="text-slate-400 text-xs font-medium mb-1">Mon - Sat: 9 AM - 6 PM</p>
+              <p className="text-slate-400 text-xs font-medium hover:text-white transition cursor-pointer">hello@synthfocus.ai</p>
+            </div>
           </div>
-        )}
-      </div>
-    </main>
+
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-4 backdrop-blur-md">
+            <span className="text-lg p-2.5 bg-white/10 text-slate-200 rounded-xl border border-white/5 shrink-0 flex items-center justify-center">
+              ⚠️
+            </span>
+            <div className="space-y-1.5">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                Product Pre-Validation & Diagnostics Disclaimer
+              </h4>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                SynthFocus AI operates as an automated pre-validation engine. Diagnostics, readiness scores, and persona critiques generated by multi-agent LLM loops are intended for preliminary concept screening only and do not replace formal legal, financial, or market litigation counsel.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-white/5 text-center text-[11px] text-slate-500 font-medium flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>© 2026 SynthFocus AI. All rights reserved.</p>
+            <div className="flex gap-4">
+              <span className="hover:text-slate-300 cursor-pointer transition">Status</span>
+              <span className="hover:text-slate-300 cursor-pointer transition">Security</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
-}
-
-function buildFilePayload(inputType: 'audio' | 'image', file: File | null) {
-  const formData = new FormData();
-  formData.append('input_type', inputType);
-  if (file) {
-    formData.append('file', file);
-  }
-  return formData;
-}
-
-function getErrorMessage(data: unknown) {
-  if (
-    data &&
-    typeof data === 'object' &&
-    'detail' in data &&
-    typeof data.detail === 'string'
-  ) {
-    return data.detail;
-  }
-
-  return 'Verification request failed. Please try a different file or claim.';
 }
